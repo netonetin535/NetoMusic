@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <title>Admin - Upload de CD</title>
+  <style>
+    body {
+      background: #111;
+      color: #fff;
+      font-family: Arial, sans-serif;
+      padding: 40px 20px;
+    }
+
+    h1 {
+      color: #ff3c3c;
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    form {
+      max-width: 500px;
+      margin: 0 auto;
+      background: #1c1c1c;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 0 20px rgba(255, 60, 60, 0.1);
+    }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      margin-top: 20px;
+      font-weight: bold;
+    }
+
+    input[type="text"],
+    input[type="file"] {
+      width: 100%;
+      padding: 10px;
+      border: none;
+      border-radius: 5px;
+      background: #2a2a2a;
+      color: #fff;
+    }
+
+    button {
+      margin-top: 30px;
+      width: 100%;
+      padding: 12px;
+      background: #ff3c3c;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #e12b2b;
+    }
+  </style>
+</head>
+<body>
+  <h1>📀 Painel de Upload de CD</h1>
+  <form action="/api/upload" method="post" enctype="multipart/form-data">
+    <label for="nome">Nome do CD:</label>
+    <input type="text" name="nome" id="nome" required>
+
+    <label for="instagram">Link do Instagram:</label>
+    <input type="text" name="instagram" id="instagram" placeholder="https://instagram.com/seuPerfil">
+
+    <label for="suamusica">Link do Sua Música:</label>
+    <input type="text" name="suamusica" id="suamusica" placeholder="https://www.suamusica.com.br/seuPerfil">
+
+    <label for="capa">Capa do CD (JPG/PNG):</label>
+    <input type="file" name="capa" id="capa" accept="image/*" required>
+
+    <label for="zip">Arquivo ZIP:</label>
+    <input type="file" name="zip" id="zip" accept=".zip" required>
+
+    <label for="faixas">Faixas MP3:</label>
+    <input type="file" name="faixas" id="faixas" accept=".mp3" multiple required>
+
+    <button type="submit">Enviar CD</button>
+  </form>
+
+  <hr style="margin: 40px auto; max-width: 500px; border: 1px solid #444;">
+  <h1>🗑️ Remover CDs</h1>
+  <div id="lista-cds" style="max-width: 500px; margin: 0 auto;"></div>
+
+  <script>
+    fetch('/api/cds')
+      .then(res => res.json())
+      .then(cds => {
+        const container = document.getElementById('lista-cds');
+        if (!cds.length) {
+          container.innerHTML = '<p style="text-align:center;">Nenhum CD cadastrado.</p>';
+          return;
+        }
+
+        cds.forEach(cd => {
+          const div = document.createElement('div');
+          div.style = 'background:#1c1c1c;padding:15px;margin-top:15px;border-radius:10px;';
+          div.innerHTML = `
+            <strong>${cd.nome}</strong><br/>
+            <button onclick="removerCD(${cd.id})" style="margin-top:10px;background:#ff3c3c;color:white;border:none;padding:8px 12px;border-radius:5px;cursor:pointer;">❌ Remover</button>
+          `;
+          container.appendChild(div);
+        });
+      });
+
+    function removerCD(id) {
+      if (!confirm("Tem certeza que deseja remover este CD?")) return;
+
+      fetch('/api/remover', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id })
+      })
+        .then(res => res.json().then(data => ({ status: res.status, body: data })))
+        .then(({ status, body }) => {
+          if (status === 200) {
+            alert('CD removido com sucesso.');
+            location.reload();
+          } else {
+            alert(`Erro ao remover CD: ${body.message || 'Erro desconhecido.'}`);
+          }
+        })
+        .catch(err => {
+          console.error('Erro na requisição:', err);
+          alert('Erro ao remover CD: Falha na comunicação com o servidor.');
+        });
+    }
+  </script>
+</body>
+</html>

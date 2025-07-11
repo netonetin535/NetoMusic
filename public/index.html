@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <title>CDs para Download</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <style>
+    body {
+      background: #111;
+      color: #fff;
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      margin: 0;
+    }
+
+    h1 {
+      text-align: center;
+      color: #ff3c3c;
+      margin-top: 10px;
+    }
+
+    .logo {
+      text-align: center;
+      margin-bottom: 10px;
+    }
+
+    .logo img {
+      height: 60px;
+    }
+
+    .cds-container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 20px;
+      margin-top: 30px;
+    }
+
+    .card {
+      background: #1c1c1c;
+      border-radius: 10px;
+      overflow: hidden;
+      width: 300px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+    }
+
+    .card img {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+    }
+
+    .card-content {
+      padding: 15px;
+    }
+
+    .card h3 {
+      margin: 0 0 10px;
+      font-size: 16px;
+    }
+
+    .buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .buttons button {
+      flex: 1 1 45%;
+      padding: 8px;
+      border: none;
+      border-radius: 5px;
+      color: white;
+      cursor: pointer;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+    }
+
+    .btn-download {
+      background: #ff3c3c;
+    }
+
+    .btn-player {
+      background: #333;
+    }
+
+    .btn-suamusica {
+      padding: 6px;
+    }
+
+    .btn-suamusica img {
+      width: 32px;
+      height: auto;
+      filter: brightness(0) invert(1);
+    }
+
+    #audioPlayer {
+      display: none;
+      background: #1a1a1a;
+      padding: 20px;
+      border-radius: 10px;
+      margin-top: 40px;
+    }
+
+    #audioPlayer img {
+      width: 100px;
+      height: 100px;
+      object-fit: cover;
+      border-radius: 5px;
+    }
+
+    #audioPlayer ul {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 20px;
+      padding: 0;
+    }
+
+    #audioPlayer li {
+      list-style: none;
+      background: #2a2a2a;
+      padding: 10px;
+      border-radius: 5px;
+      flex: 1 1 120px;
+      text-align: center;
+      cursor: pointer;
+    }
+
+    #audioPlayer li.ativa {
+      background: #ff3c3c;
+      font-weight: bold;
+    }
+
+    .controls {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .controls button {
+      padding: 10px 15px;
+      font-size: 18px;
+      border: none;
+      background: #333;
+      color: white;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .controls button:hover {
+      background: #555;
+    }
+
+    footer {
+      text-align: center;
+      color: #777;
+      margin-top: 50px;
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+  <div class="logo">
+    <img src="/logo.png" alt="Logo" />
+  </div>
+  <h1><i class="fa-solid fa-compact-disc"></i> CDs para Download</h1>
+
+  <div class="cds-container" id="cds-container"></div>
+
+  <div id="audioPlayer">
+    <div style="display: flex; align-items: center; gap: 20px;">
+      <img id="capaAtual" src="" alt="Capa do CD" />
+      <div style="flex: 1">
+        <h3 id="tituloFaixa">Tocando agora:</h3>
+        <audio id="audio" controls style="width: 100%"></audio>
+      </div>
+    </div>
+    <div class="controls">
+      <button onclick="anterior()" title="Anterior"><i class="fa-solid fa-backward-step"></i></button>
+      <button onclick="playPause()" id="playPauseBtn" title="Play/Pause"><i class="fa-solid fa-pause"></i></button>
+      <button onclick="proxima()" title="Próxima"><i class="fa-solid fa-forward-step"></i></button>
+      <button onclick="alternarLoop()" id="loopBtn" title="Repetir"><i class="fa-solid fa-repeat"></i></button>
+    </div>
+    <ul id="lista-faixas"></ul>
+  </div>
+
+  <footer>
+    Desenvolvido por Neto Music • © 2025
+  </footer>
+
+  <script>
+    fetch('/api/cds')
+      .then(res => res.json())
+      .then(cds => {
+        const container = document.getElementById('cds-container');
+        cds.forEach(cd => {
+          const card = document.createElement('div');
+          card.className = 'card';
+          card.innerHTML = `
+            <img src="${cd.capa}" alt="Capa">
+            <div class="card-content">
+              <h3>${cd.nome}</h3>
+              <div class="buttons">
+                <button class="btn-download" onclick="location.href='${cd.zip}'"><i class="fa-solid fa-download"></i> Baixar ZIP</button>
+                <button class="btn-player" onclick='tocarCD(${JSON.stringify(cd.nome)}, "${cd.capa}", ${JSON.stringify(cd.faixas)})'><i class="fa-solid fa-headphones"></i> Ouvir CD</button>
+                ${cd.instagram ? `
+                  <button style="background: #d6249f;" onclick="window.open('${cd.instagram}', '_blank')">
+                    <i class="fab fa-instagram"></i>
+                  </button>` : ''}
+                ${cd.suamusica ? `
+                  <button style="background: #1db954;" onclick="window.open('${cd.suamusica}', '_blank')" class="btn-suamusica">
+                    <img src="https://assets.suamusica.com.br/img/logo.png" alt="Sua Música">
+                  </button>` : ''}
+              </div>
+            </div>
+          `;
+          container.appendChild(card);
+        });
+      });
+
+    // PLAYER
+    let audio = document.getElementById('audio');
+    let titulo = document.getElementById('tituloFaixa');
+    let capa = document.getElementById('capaAtual');
+    let listaContainer = document.getElementById('lista-faixas');
+    let playPauseBtn = document.getElementById('playPauseBtn');
+    let loopBtn = document.getElementById('loopBtn');
+    let faixaAtual = 0;
+    let playlist = [];
+
+    function tocarCD(nomeCD, capaURL, faixas) {
+      document.getElementById('audioPlayer').style.display = 'block';
+      playlist = faixas;
+      faixaAtual = 0;
+      capa.src = capaURL;
+      carregarFaixa(nomeCD);
+    }
+
+    function carregarFaixa(nomeCD) {
+      audio.src = playlist[faixaAtual].arquivo;
+      audio.play();
+      titulo.textContent = `Tocando: ${playlist[faixaAtual].nome}`;
+      atualizarLista(nomeCD);
+      playPauseBtn.innerHTML = '<i class="fa-solid fa-pause"></i>';
+    }
+
+    function atualizarLista(nomeCD) {
+      listaContainer.innerHTML = '';
+      playlist.forEach((faixa, i) => {
+        let li = document.createElement('li');
+        li.textContent = faixa.nome;
+        li.onclick = () => {
+          faixaAtual = i;
+          carregarFaixa(nomeCD);
+        };
+        if (i === faixaAtual) li.classList.add('ativa');
+        listaContainer.appendChild(li);
+      });
+    }
+
+    function playPause() {
+      if (audio.paused) {
+        audio.play();
+        playPauseBtn.innerHTML = '<i class="fa-solid fa-pause"></i>';
+      } else {
+        audio.pause();
+        playPauseBtn.innerHTML = '<i class="fa-solid fa-play"></i>';
+      }
+    }
+
+    function proxima() {
+      faixaAtual = (faixaAtual + 1) % playlist.length;
+      carregarFaixa();
+    }
+
+    function anterior() {
+      faixaAtual = (faixaAtual - 1 + playlist.length) % playlist.length;
+      carregarFaixa();
+    }
+
+    function alternarLoop() {
+      audio.loop = !audio.loop;
+      loopBtn.style.color = audio.loop ? 'lime' : 'white';
+    }
+
+    audio.addEventListener('ended', () => {
+      if (!audio.loop) proxima();
+    });
+  </script>
+</body>
+</html>
