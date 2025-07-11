@@ -1,6 +1,7 @@
 const express = require('express');
 const multer = require('multer');
 const session = require('express-session');
+const FileStore = require('connect-file-session')(session);
 const fs = require('fs');
 const path = require('path');
 const app = express();
@@ -10,27 +11,40 @@ const PORT = process.env.PORT || 3000;
 const ADMIN_USER = 'admin';
 const ADMIN_PASS = '123456';
 
-// Uploads configurados para salvar em /public/uploads
-const upload = multer({ dest: 'public/uploads/' });
+// Uploads configurados com limite de tamanho (10MB por arquivo)
+const upload = multer({
+  dest: 'public/uploads/',
+  limits: { fileSize: 10 * 1024 * 1024 } // Limite de 10MB por arquivo
+});
 
 // Middlewares
 app.use(express.static('public'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Configuração da sessão com FileStore
 app.use(session({
+  store: new FileStore({
+    path: path.join(__dirname, 'sessions'), // Pasta para armazenar sessões
+    ttl: 24 * 60 * 60 // Tempo de vida da sessão (24 horas)
+  }),
   secret: 'secreto-cds',
   resave: false,
-  saveUninitialized: true
+  saveUninitialized: false,
+  cookie: { maxAge: 24 * 60 * 60 * 1000 } // 24 horas
 }));
 
 // Banco de dados local
 const dbPath = './cds.json';
-let cds = fs.existsSync(dbPath) ? JSON.parse(fs.readFileSync(dbPath)) : [];
+function loadCDs() {
+  return fs.existsSync(dbPath) ? JSON.parse(fs.readFileSync(dbPath)) : [];
+}
+let cds = loadCDs(); // Carrega apenas no início
 
-function saveCDs() {
+function saveCDs(cdsData) {
   try {
-    fs.writeFileSync(dbPath, JSON.stringify(cds, null, 2));
+    fs.writeFileSync(dbPath, JSON.stringify(cdsData, null, 2));
+    console.log('cds.json salvo com sucesso.');
   } catch (err) {
     console.error('Erro ao salvar cds.json:', err.message);
     throw new Error('Falha ao salvar banco de dados');
@@ -95,8 +109,9 @@ app.post('/api/upload', upload.fields([
   };
 
   try {
+    let cds = loadCDs(); // Recarrega do disco
     cds.unshift(cd);
-    saveCDs();
+    saveCDs(cds); // Salva imediatamente após adicionar
     res.redirect('/admin/admin.html');
   } catch (err) {
     res.status(500).json({ message: `Erro ao salvar CD: ${err.message}` });
@@ -105,12 +120,13 @@ app.post('/api/upload', upload.fields([
 
 // API pública para listar CDs
 app.get('/api/cds', (req, res) => {
-  res.json(cds);
+  res.json(loadCDs()); // Recarrega do disco a cada requisição
 });
 
 // Rota para baixar o ZIP com o nome original
 app.get('/api/download/:id', (req, res) => {
   const { id } = req.params;
+  const cds = loadCDs(); // Recarrega do disco
   const cd = cds.find(cd => cd.id == id);
   if (!cd) {
     return res.status(404).json({ message: 'CD não encontrado.' });
@@ -122,7 +138,7 @@ app.get('/api/download/:id', (req, res) => {
   }
 
   res.download(filePath, cd.zipOriginal, (err) => {
-    if (err) {
+    if (err && !res.headersSent) {
       console.error('Erro ao baixar arquivo:', err.message);
       res.status(500).json({ message: `Erro ao baixar arquivo: ${err.message}` });
     }
@@ -140,6 +156,7 @@ app.post('/api/remover', (req, res) => {
     return res.status(400).json({ message: 'ID do CD não fornecido.' });
   }
 
+  let cds = loadCDs(); // Recarrega do disco
   const index = cds.findIndex(cd => cd.id == id);
   if (index === -1) {
     return res.status(404).json({ message: 'CD não encontrado.' });
@@ -176,7 +193,7 @@ app.post('/api/remover', (req, res) => {
   // Atualizar o banco de dados
   try {
     cds.splice(index, 1);
-    saveCDs();
+    saveCDs(cds); // Salva diretamente
     res.status(200).json({ message: 'CD removido com sucesso.' });
   } catch (err) {
     console.error('Erro ao atualizar cds.json:', err.message);
@@ -188,3 +205,9 @@ app.post('/api/remover', (req, res) => {
 app.listen(PORT, () => {
   console.log(`Servidor rodando em http://localhost:${PORT}`);
 });
+
+// Cria a pasta de sessões se não existir
+const sessionPath = path.join(__dirname, 'sessions');
+if (!fs.existsSync(sessionPath)) {
+  fs.mkdirSync(sessionPath);
+}
