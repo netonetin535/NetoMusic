@@ -1,7 +1,7 @@
 const express = require('express');
 const multer = require('multer');
 const session = require('express-session');
-const FileStore = require('connect-file-session')(session);
+const FileStore = require('session-file-store')(session); // Atualizado para session-file-store
 const fs = require('fs');
 const path = require('path');
 const app = express();
