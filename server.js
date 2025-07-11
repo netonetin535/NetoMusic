@@ -108,6 +108,27 @@ app.get('/api/cds', (req, res) => {
   res.json(cds);
 });
 
+// Rota para baixar o ZIP com o nome original
+app.get('/api/download/:id', (req, res) => {
+  const { id } = req.params;
+  const cd = cds.find(cd => cd.id == id);
+  if (!cd) {
+    return res.status(404).json({ message: 'CD não encontrado.' });
+  }
+
+  const filePath = path.join(__dirname, 'public', cd.zip);
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).json({ message: 'Arquivo ZIP não encontrado no servidor.' });
+  }
+
+  res.download(filePath, cd.zipOriginal, (err) => {
+    if (err) {
+      console.error('Erro ao baixar arquivo:', err.message);
+      res.status(500).json({ message: `Erro ao baixar arquivo: ${err.message}` });
+    }
+  });
+});
+
 // Rota para remover um CD
 app.post('/api/remover', (req, res) => {
   if (!req.session.logado) {
