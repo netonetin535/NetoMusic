@@ -207,7 +207,7 @@
             <div class="card-content">
               <h3>${cd.nome}</h3>
               <div class="buttons">
-                <button class="btn-download" onclick="location.href='${cd.zip}'"><i class="fa-solid fa-download"></i> Baixar ZIP</button>
+                <button class="btn-download" onclick="location.href='/api/download/${cd.id}'"><i class="fa-solid fa-download"></i> Baixar ZIP</button>
                 <button class="btn-player" onclick='tocarCD(${JSON.stringify(cd.nome)}, "${cd.capa}", ${JSON.stringify(cd.faixas)})'><i class="fa-solid fa-headphones"></i> Ouvir CD</button>
                 ${cd.instagram ? `
                   <button style="background: #d6249f;" onclick="window.open('${cd.instagram}', '_blank')">
